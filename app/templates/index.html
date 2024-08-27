@@ -20,5 +20,31 @@
             <!-- Generated image and caption will be displayed here -->
         </div>
     </div>
+
+    <script>
+        document.getElementById('prompt-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const prompt = document.getElementById('prompt').value;
+
+            fetch('/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ prompt: prompt })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Display the result
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = `<img src="${data.image_url}" alt="Generated Image" class="mx-auto my-4">
+                                       <p class="text-lg text-gray-700">${data.caption}</p>`;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
 </body>
 </html>
