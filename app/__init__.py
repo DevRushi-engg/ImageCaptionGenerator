@@ -1,13 +1,10 @@
-print("Initializing Flask app...")
-
-from flask import Flask
+from flask import Flask, render_template
 
 def create_app():
-    print("Creating Flask app...")
     app = Flask(__name__)
 
     @app.route('/')
     def index():
-        return 'Hello, World!'
+        return render_template('index.html')
 
     return app
