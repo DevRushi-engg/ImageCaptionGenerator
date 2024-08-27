@@ -18,33 +18,33 @@
         </form>
         <div id="result" class="mt-8 text-center">
             <!-- Generated image and caption will be displayed here -->
+            <img id="generated-image" src="" alt="Generated Image" class="mx-auto my-4">
+            <p id="generated-caption" class="text-lg text-gray-700"></p>
         </div>
-    </div>
-
-    <script>
-        document.getElementById('prompt-form').addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent default form submission
-
-            const prompt = document.getElementById('prompt').value;
-
-            fetch('/generate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ prompt: prompt })
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Display the result
-                const resultDiv = document.getElementById('result');
-                resultDiv.innerHTML = `<img src="${data.image_url}" alt="Generated Image" class="mx-auto my-4">
-                                       <p class="text-lg text-gray-700">${data.caption}</p>`;
-            })
-            .catch(error => {
-                console.error('Error:', error);
+        
+        <script>
+            document.getElementById('prompt-form').addEventListener('submit', function(event) {
+                event.preventDefault();
+        
+                const prompt = document.getElementById('prompt').value;
+        
+                fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ prompt: prompt })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('generated-image').src = data.image_url;
+                    document.getElementById('generated-caption').textContent = data.caption;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
             });
-        });
-    </script>
+        </script>
+        
 </body>
 </html>

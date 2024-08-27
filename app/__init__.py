@@ -1,3 +1,4 @@
+import requests
 from flask import Flask, render_template, request, jsonify
 
 def create_app():
@@ -12,9 +13,21 @@ def create_app():
         data = request.get_json()
         prompt = data.get('prompt')
 
-        # Placeholder for image and caption generation
-        # For now, return a dummy image URL and caption
-        image_url = "https://via.placeholder.com/300"
+        # Hugging Face API setup
+        api_url = "https://api-inference.huggingface.co/models/CompVis/stable-diffusion-v1-4"
+        headers = {"Authorization": f"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"}
+
+        # Make the API call for image generation
+        response = requests.post(api_url, headers=headers, json={"inputs": prompt})
+        image_data = response.content
+
+        # Save the image locally
+        image_path = "static/generated_image.png"
+        with open(image_path, "wb") as f:
+            f.write(image_data)
+
+        # Return the image URL
+        image_url = f"/{image_path}"
         caption = f"Generated caption for: {prompt}"
 
         return jsonify({'image_url': image_url, 'caption': caption})
