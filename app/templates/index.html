@@ -17,8 +17,9 @@
             <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Generate</button>
         </form>
         <div id="result" class="mt-8 text-center">
-            <img id="generated-image" src="" alt="Generated Image" class="mx-auto my-4 max-w-full h-auto">
+            <img id="generated-image" src="" alt="Generated Image" class="mx-auto my-4 max-w-full h-auto hidden">
             <p id="generated-caption" class="text-lg text-gray-700"></p>
+            <p id="error-message" class="text-lg text-red-600 hidden"></p>
         </div>
     </div>
     
@@ -27,6 +28,16 @@
             event.preventDefault();
 
             const prompt = document.getElementById('prompt').value;
+            const generateButton = this.querySelector('button[type="submit"]');
+            const errorMessage = document.getElementById('error-message');
+            const generatedImage = document.getElementById('generated-image');
+            const generatedCaption = document.getElementById('generated-caption');
+
+            generateButton.disabled = true;
+            generateButton.textContent = 'Generating...';
+            errorMessage.classList.add('hidden');
+            generatedImage.classList.add('hidden');
+            generatedCaption.textContent = '';
 
             fetch('/generate', {
                 method: 'POST',
@@ -35,14 +46,25 @@
                 },
                 body: JSON.stringify({ prompt: prompt })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
             .then(data => {
-                const imageUrl = data.image_url + "?t=" + new Date().getTime();
-                document.getElementById('generated-image').src = imageUrl;
-                document.getElementById('generated-caption').textContent = data.caption;
+                generatedImage.src = data.image_url;
+                generatedImage.classList.remove('hidden');
+                generatedCaption.textContent = data.caption;
             })
             .catch(error => {
                 console.error('Error:', error);
+                errorMessage.textContent = error.error || 'An unexpected error occurred. Please try again later.';
+                errorMessage.classList.remove('hidden');
+            })
+            .finally(() => {
+                generateButton.disabled = false;
+                generateButton.textContent = 'Generate';
             });
         });
     </script>

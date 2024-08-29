@@ -1,9 +1,33 @@
 from flask import Flask, render_template, request, jsonify, send_from_directory
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import os
+import time
 
 def create_app():
     app = Flask(__name__, static_folder='../static', static_url_path='/static')
+
+    IMAGE_FILENAME = "generated_image.png"
+
+    def requests_retry_session(
+        retries=3,
+        backoff_factor=0.3,
+        status_forcelist=(500, 502, 503, 504),
+        session=None,
+    ):
+        session = session or requests.Session()
+        retry = Retry(
+            total=retries,
+            read=retries,
+            connect=retries,
+            backoff_factor=backoff_factor,
+            status_forcelist=status_forcelist,
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+        return session
 
     @app.route('/')
     def index():
@@ -17,16 +41,24 @@ def create_app():
         api_url = "https://api-inference.huggingface.co/models/CompVis/stable-diffusion-v1-4"
         headers = {"Authorization": f"Bearer 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"}
 
-        response = requests.post(api_url, headers=headers, json={"inputs": prompt})
-        image_data = response.content
+        try:
+            response = requests_retry_session().post(api_url, headers=headers, json={"inputs": prompt}, timeout=60)
+            response.raise_for_status()
+            image_data = response.content
+        except requests.exceptions.RequestException as e:
+            app.logger.error(f"Failed to generate image: {str(e)}")
+            return jsonify({'error': "Failed to generate image. The service might be temporarily unavailable. Please try again later."}), 503
 
-        image_filename = "generated_image.png"
-        image_path = os.path.join(app.static_folder, image_filename)
-        with open(image_path, "wb") as f:
-            f.write(image_data)
+        image_path = os.path.join(app.static_folder, IMAGE_FILENAME)
+        try:
+            with open(image_path, "wb") as f:
+                f.write(image_data)
+        except IOError as e:
+            app.logger.error(f"Failed to save image: {str(e)}")
+            return jsonify({'error': "Failed to save the generated image. Please try again."}), 500
 
         return jsonify({
-            'image_url': f'/static/{image_filename}',
+            'image_url': f'/static/{IMAGE_FILENAME}?t={int(time.time())}',
             'caption': f"Generated caption for: {prompt}"
         })
 
