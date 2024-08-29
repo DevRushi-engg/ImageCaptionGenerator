@@ -7,64 +7,61 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100">
-    <div class="container mx-auto p-4">
-        <h1 class="text-2xl font-bold text-center mb-6">Image and Caption Generator</h1>
-        <form id="prompt-form" class="w-full max-w-lg mx-auto bg-white p-8 rounded-lg shadow-md">
+    <div class="container mx-auto mt-10">
+        <div class="max-w-lg mx-auto bg-white p-8 rounded shadow">
+            <h1 class="text-2xl font-bold mb-6 text-center">Image and Caption Generator</h1>
             <div class="mb-4">
                 <label for="prompt" class="block text-gray-700 font-bold mb-2">Enter a prompt:</label>
-                <input type="text" id="prompt" name="prompt" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="e.g., A cat sitting on a couch">
+                <input type="text" id="prompt" class="w-full p-2 border border-gray-300 rounded" placeholder="A cat sitting on a couch happy">
             </div>
-            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Generate</button>
-        </form>
-        <div id="result" class="mt-8 text-center">
-            <img id="generated-image" src="" alt="Generated Image" class="mx-auto my-4 max-w-full h-auto hidden">
-            <p id="generated-caption" class="text-lg text-gray-700"></p>
-            <p id="error-message" class="text-lg text-red-600 hidden"></p>
+            <button id="generate-btn" class="bg-blue-500 text-white px-4 py-2 rounded">Generate</button>
+            <div id="loading-indicator" class="hidden mt-4 text-center">Loading...</div>
+            <div class="mt-6">
+                <h2 class="text-lg font-semibold text-center">Generated Image</h2>
+                <div class="mt-4 text-center">
+                    <img id="generated-image" src="" alt="Generated Image" class="mx-auto max-w-full hidden">
+                </div>
+                <div class="text-center mt-4">
+                    <a id="download-btn" href="" download="generated_image.png" class="hidden bg-green-500 text-white px-4 py-2 rounded">Download Image</a>
+                </div>
+                <p id="caption" class="text-center text-gray-700 mt-4"></p>
+            </div>
         </div>
     </div>
-    
+
     <script>
-        document.getElementById('prompt-form').addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            const prompt = document.getElementById('prompt').value;
-            const generateButton = this.querySelector('button[type="submit"]');
-            const errorMessage = document.getElementById('error-message');
-            const generatedImage = document.getElementById('generated-image');
-            const generatedCaption = document.getElementById('generated-caption');
-
-            generateButton.disabled = true;
-            generateButton.textContent = 'Generating...';
-            errorMessage.classList.add('hidden');
-            generatedImage.classList.add('hidden');
-            generatedCaption.textContent = '';
+        document.getElementById('generate-btn').addEventListener('click', function () {
+            var prompt = document.getElementById('prompt').value;
+            document.getElementById('loading-indicator').classList.remove('hidden');
 
             fetch('/generate', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ prompt: prompt })
+                body: JSON.stringify({ prompt: prompt }),
             })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => { throw err; });
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                generatedImage.src = data.image_url;
-                generatedImage.classList.remove('hidden');
-                generatedCaption.textContent = data.caption;
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    var generatedImage = document.getElementById('generated-image');
+                    generatedImage.src = data.image_url;
+                    generatedImage.classList.remove('hidden');
+
+                    var downloadBtn = document.getElementById('download-btn');
+                    downloadBtn.href = data.image_url;
+                    downloadBtn.classList.remove('hidden');
+
+                    document.getElementById('caption').textContent = data.caption;
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
-                errorMessage.textContent = error.error || 'An unexpected error occurred. Please try again later.';
-                errorMessage.classList.remove('hidden');
             })
             .finally(() => {
-                generateButton.disabled = false;
-                generateButton.textContent = 'Generate';
+                document.getElementById('loading-indicator').classList.add('hidden');
             });
         });
     </script>
