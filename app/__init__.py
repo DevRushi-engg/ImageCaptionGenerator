@@ -4,6 +4,8 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import os
 import time
+from io import BytesIO
+from PIL import Image
 
 def create_app():
     app = Flask(__name__, static_folder='../static', static_url_path='/static')
@@ -38,13 +40,25 @@ def create_app():
         data = request.get_json()
         prompt = data.get('prompt')
 
-        api_url = "https://api-inference.huggingface.co/models/CompVis/stable-diffusion-v1-4"
+        # Input validation
+        if not prompt or len(prompt.strip()) == 0:
+            return jsonify({'error': "Prompt cannot be empty."}), 400
+        if len(prompt) > 900:
+            return jsonify({'error': "Prompt is too long. Please use fewer than 100 characters."}), 400
+
+        api_url = "https://api-inference.huggingface.co/models/davisbro/half_illustration"
         headers = {"Authorization": f"Bearer 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"}
 
         try:
             response = requests_retry_session().post(api_url, headers=headers, json={"inputs": prompt}, timeout=60)
             response.raise_for_status()
             image_data = response.content
+        except requests.exceptions.Timeout:
+            app.logger.error("Request timed out.")
+            return jsonify({'error': "The request took too long. Please try again later."}), 504
+        except requests.exceptions.TooManyRedirects:
+            app.logger.error("Too many redirects.")
+            return jsonify({'error': "The service encountered too many redirects. Please try again later."}), 500
         except requests.exceptions.RequestException as e:
             app.logger.error(f"Failed to generate image: {str(e)}")
             return jsonify({'error': "Failed to generate image. The service might be temporarily unavailable. Please try again later."}), 503
