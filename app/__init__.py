@@ -4,7 +4,6 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import os
 import time
-from io import BytesIO
 from PIL import Image
 
 def create_app():
@@ -43,7 +42,7 @@ def create_app():
         # Input validation
         if not prompt or len(prompt.strip()) == 0:
             return jsonify({'error': "Prompt cannot be empty."}), 400
-        if len(prompt) > 900:
+        if len(prompt) > 100:
             return jsonify({'error': "Prompt is too long. Please use fewer than 100 characters."}), 400
 
         api_url = "https://api-inference.huggingface.co/models/davisbro/half_illustration"
